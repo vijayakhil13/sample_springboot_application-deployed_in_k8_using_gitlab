@@ -110,22 +110,17 @@ jobs:
     runs-on: [self-hosted, Windows]
 
     steps:
-    - name: Set active image in Minikube via WSL
-      # FIXED: Changed the shell handler from powershell to wsl
-      shell: wsl
+    - name: Set active image in Minikube via Bash
+      # FIXED: Swapped 'wsl' with the built-in validated 'bash' engine keyword
+      shell: bash
       run: |
-        # Generate the matching short SHA tag string
         SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
         NEW_TAG="main-${SHORT_SHA}"
-        
-        # Downcase the image repository name path string
         REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
         
-        echo "🚀 Executing push deployment directly into local Minikube via WSL..."
+        echo "🚀 Executing push deployment directly into local Minikube via Bash..."
         echo "Target Tag Version: ${NEW_TAG}"
         
-        # Run the deployment command inside your working Linux environment context
         kubectl set image deployment/spring-boot-app spring-boot-app=ghcr.io/${REPO_NAME}:${NEW_TAG}
-        
-        # Monitor the rolling restart phase status
         kubectl rollout status deployment/spring-boot-app
+
