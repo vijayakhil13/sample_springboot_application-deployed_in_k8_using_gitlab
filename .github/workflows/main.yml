@@ -110,3 +110,35 @@ jobs:
         labels: ${{ steps.meta-ghcr.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
+  update-manifest:
+    needs: build-and-push-image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Update deployment image tag
+      run: |
+        # Generate the short SHA to match the tag pattern (main-XXXXXXX)
+        SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+        NEW_TAG="main-${SHORT_SHA}"
+        
+        # Target your specific deployment manifest file (adjust name if it is deployment.yaml)
+        TARGET_FILE="./java-maven-sonar-argocd-helm-k8s/spring-boot-app/k8/deployment.yaml"
+        
+        echo "Updating image tag inside $TARGET_FILE to: $NEW_TAG"
+        
+        # Replaces the old image tag sequence with the updated tag string using sed
+        sed -i "s|image: vineethvinni/.*|image: ghcr.io/${{ github.repository }}:${NEW_TAG}|g" $TARGET_FILE
+
+    - name: Commit and push changes to GitHub
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@://github.com"
+        git add .
+        git commit -m "chore: update k8s manifest image tag to main-$(echo ${{ github.sha }} | cut -c1-7) [skip ci]" || exit 0
+        git push origin main
+
